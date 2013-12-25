@@ -45,7 +45,6 @@ instance Monoid Sketch where
 -- a little syntactic sugar
 (<+>)::Sketch->Sketch->Sketch
 (<+>) = mappend
-a
 sketchFunc::Sketch->(PState->PState)
 sketchFunc (SketchCons f) = f
 
@@ -82,10 +81,22 @@ modColor f = (SketchCons modColor')
 
 --render a little test circle to get a sense of the progress.
 testCircle::IO ()
-testCircle = renderSketch "output.bmp" 800 800 (solidColor (255, 0, 0) <+> sketchIfLoc (\coord->(distance coord (0,0)) < 1.0 ) (solidColor white) )            
+testCircle = renderSketch "output.bmp" 800 800 (solidColor (255, 0, 0) <+> (sketchFig (circle (0,0) 1 ) (solidColor (127,127,127))))
 
 -----------------------------------------------------------------------------------------
---some math stuff that may move elsewhere
+--Implementation of "figure", an anti-aliasing-based data type used in rendering/modulating sketches
+-- it is based on a method used in determining whether a shape is inside or outside a data structure.
+-- a negative return value means it's inside the shape
+data Figure = FigCon (Coord->Double)
+
+--creates a new sketch from a figure and a sketch, such that the sketch only gets drawn 
+sketchFig :: Figure->Sketch->Sketch
+sketchFig (FigCon f) s = sketchIfLoc (\coord-> (f coord) <= 0) s
+
+circle::Coord->Double->Figure
+circle coord rad = FigCon (\c->(distance c coord) - rad )
+-----------------------------------------------------------------------------------------
+--some math stuff that may move elsewhere eventually
 zmap ::(Double,Double)->(Double,Double)->Double->Double
 zmap (inmin,inmax) (outmin,outmax) =  (outmin +) . ((outmax-outmin) *) . ( / (inmax - inmin)) . (subtract inmin)
 
